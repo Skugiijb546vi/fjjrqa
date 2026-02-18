@@ -73,18 +73,28 @@
     </div>
 
     <div class="container mx-auto px-4 md:px-8 -mt-6 relative z-20 space-y-12 pb-24">
+        
         <div id="movies-section" class="space-y-4">
-            <h3 class="text-xl font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-2"><div class="w-1 h-6 bg-blue-500 rounded"></div> فیلمە ژێرنووسکراوەکان</h3>
+            <h3 class="text-xl font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-2">
+                <div class="w-1 h-6 bg-blue-500 rounded"></div> فیلمە ژێرنووسکراوەکان
+            </h3>
             <div id="subtitled-row" class="flex gap-4 overflow-x-auto no-scrollbar pb-4"></div>
         </div>
+
         <div id="series-section" class="space-y-4">
-            <h3 class="text-xl font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-2"><div class="w-1 h-6 bg-blue-500 rounded"></div> نوێترین زنجیرەکان</h3>
+            <h3 class="text-xl font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-2">
+                <div class="w-1 h-6 bg-blue-500 rounded"></div> نوێترین زنجیرەکان
+            </h3>
             <div id="series-row" class="flex gap-4 overflow-x-auto no-scrollbar pb-4"></div>
         </div>
+
         <div id="dubbed-section" class="space-y-4">
-            <h3 class="text-xl font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-2"><div class="w-1 h-6 bg-blue-500 rounded"></div> فیلمە دۆبلاژکراوەکان</h3>
+            <h3 class="text-xl font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-2">
+                <div class="w-1 h-6 bg-blue-500 rounded"></div> فیلمە دۆبلاژکراوەکان
+            </h3>
             <div id="dubbed-row" class="flex gap-4 overflow-x-auto no-scrollbar pb-4"></div>
         </div>
+
     </div>
 
     <div id="player-modal" class="fixed inset-0 z-[100] flex flex-col items-center justify-center p-0 md:p-10">
@@ -115,9 +125,12 @@
         const db = getDatabase(app);
         
         const player = new Plyr('#main-video', {
-            captions: { active: true, update: true, language: 'ku' }, // زمانی سەرەکی ئەگەر هەبێت
+            captions: { active: true, update: true, language: 'ku' },
             controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'fullscreen']
         });
+
+        // گەنجینەی داتاکان بۆ ڕێگریکردن لە قفڵبوونی سایتەکە
+        window.allMoviesData = {};
 
         onValue(ref(db, 'subtitled_movies'), (snapshot) => renderCards(snapshot.val(), 'subtitled-row', 'ژێرنووس'));
         onValue(ref(db, 'movies'), (snapshot) => renderCards(snapshot.val(), 'dubbed-row', 'دۆبلاژ'));
@@ -125,14 +138,20 @@
 
         function renderCards(data, containerId, typeLabel) {
             const container = document.getElementById(containerId);
-            container.innerHTML = '';
+            if (!data) return;
+
+            let htmlString = '';
+
             for (let key in data) {
                 const item = data[key];
-                const safeData = encodeURIComponent(JSON.stringify(item));
+                
+                // خەزنکردنی داتاکە لە ڕام، تەنها ئایدییەکە دەنێرین بۆ دوگمەکە
+                window.allMoviesData[key] = item; 
+                
                 const imageUrl = item.image || item.poster || '';
                 
-                container.innerHTML += `
-                    <div class="movie-card min-w-[130px] md:min-w-[160px] w-[130px] md:w-[160px] flex-shrink-0 cursor-pointer group" onclick="openPlayer('${safeData}')">
+                htmlString += `
+                    <div class="movie-card min-w-[130px] md:min-w-[160px] w-[130px] md:w-[160px] flex-shrink-0 cursor-pointer group" onclick="openPlayer('${key}')">
                         <div class="relative rounded-lg overflow-hidden aspect-[2/3] bg-gray-800">
                             <img src="${imageUrl}" class="w-full h-full object-cover" loading="lazy">
                             <div class="absolute top-2 right-2 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
@@ -149,6 +168,7 @@
                     </div>
                 `;
             }
+            container.innerHTML = htmlString;
         }
 
         async function srtToVtt(srtUrl) {
@@ -160,57 +180,51 @@
                 const blob = new Blob([vttData], { type: 'text/vtt' });
                 return URL.createObjectURL(blob);
             } catch (e) {
-                console.error("Error loading subtitle:", e);
                 return null;
             }
         }
 
-        window.openPlayer = async function(encodedData) {
-            const item = JSON.parse(decodeURIComponent(encodedData));
-            
-            document.getElementById('player-title').innerText = item.title;
-            document.getElementById('player-desc').innerText = item.description || "هیچ زانیارییەک بەردەست نییە.";
-            document.getElementById('player-imdb').innerText = "IMDb: " + (item.imdb || "N/A");
-            document.getElementById('player-type').innerText = item.translation || "فیلم";
-            
-            document.getElementById('player-modal').style.display = 'flex';
-            
-            // سەرەتا ڤیدیۆکە لێدەدەین بۆ ئەوەی بینەر چاوەڕێ نەکات
-            player.source = { type: 'video', sources: [{ src: item.url, type: 'video/mp4' }] };
-            player.play();
+        window.openPlayer = async function(movieKey) {
+            try {
+                // هێنانەوەی داتاکە لە گەنجینەکە زۆر بە خێرایی
+                const item = window.allMoviesData[movieKey];
+                if (!item) return;
 
-            // پاشان لە باکگراونددا بەدوای ژێرنووسەکاندا دەگەڕێین
-            let tracks = [];
-
-            // ١. ئەگەر بە شێوازە کۆنەکە دانرابوو (تەنها کوردی)
-            if (item.subtitleKurdish) {
-                const vttUrl = await srtToVtt(item.subtitleKurdish);
-                if (vttUrl) tracks.push({ kind: 'captions', label: 'کوردی', srclang: 'ku', src: vttUrl, default: true });
-            }
-
-            // ٢. ئەگەر بە شێوازە نوێیەکە دانرابوو (لیستی ژێرنووسەکان وەک ئەو JSONەی ناردت)
-            if (item.subtitles && Array.isArray(item.subtitles)) {
-                // تەنها ١٠ ژێرنووسی یەکەم دەهێنین بۆ ئەوەی خێرا بێت
-                const subsToLoad = item.subtitles.slice(0, 10); 
-                const subPromises = subsToLoad.map(async (sub) => {
-                    const vttUrl = await srtToVtt(sub.url);
-                    if (vttUrl) {
-                        return { kind: 'captions', label: sub.display, srclang: sub.language, src: vttUrl };
-                    }
-                    return null;
-                });
+                document.getElementById('player-title').innerText = item.title;
+                document.getElementById('player-desc').innerText = item.description || "هیچ زانیارییەک بەردەست نییە.";
+                document.getElementById('player-imdb').innerText = "IMDb: " + (item.imdb || "N/A");
+                document.getElementById('player-type').innerText = item.translation || "فیلم";
                 
-                const loadedTracks = await Promise.all(subPromises);
-                loadedTracks.forEach(t => { if (t) tracks.push(t); });
-            }
+                document.getElementById('player-modal').style.display = 'flex';
+                
+                player.source = { type: 'video', sources: [{ src: item.url, type: 'video/mp4' }] };
+                player.play();
 
-            // ئەگەر هیچ ژێرنووسێک دۆزرایەوە، دەیخەینە سەر ڤیدیۆکە
-            if (tracks.length > 0) {
-                player.source = {
-                    type: 'video',
-                    sources: [{ src: item.url, type: 'video/mp4' }],
-                    tracks: tracks
-                };
+                let tracks = [];
+
+                if (item.subtitleKurdish) {
+                    const vttUrl = await srtToVtt(item.subtitleKurdish);
+                    if (vttUrl) tracks.push({ kind: 'captions', label: 'کوردی', srclang: 'ku', src: vttUrl, default: true });
+                }
+
+                if (item.subtitles && Array.isArray(item.subtitles)) {
+                    // وەرگرتنی تەنها ٥ ژێرنووس بۆ ئەوەی خێرا بێت و قفڵ نەبێت
+                    const subsToLoad = item.subtitles.slice(0, 5); 
+                    for (let sub of subsToLoad) {
+                        const vttUrl = await srtToVtt(sub.url);
+                        if (vttUrl) tracks.push({ kind: 'captions', label: sub.display, srclang: sub.language, src: vttUrl });
+                    }
+                }
+
+                if (tracks.length > 0) {
+                    player.source = {
+                        type: 'video',
+                        sources: [{ src: item.url, type: 'video/mp4' }],
+                        tracks: tracks
+                    };
+                }
+            } catch (error) {
+                console.error("کێشەیەک ڕوویدا لە کاتی کردنەوەی پلەیەر:", error);
             }
         };
 
