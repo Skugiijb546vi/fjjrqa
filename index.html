@@ -21,7 +21,6 @@
     <style>
         body { background-color: #0a0e17; color: #e2e8f0; font-family: 'Unikurd Web', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .movie-card { transition: transform 0.3s ease; }
         .movie-card:hover { transform: translateY(-6px); }
         .play-btn-overlay { background: rgba(10, 14, 23, 0.6); backdrop-filter: blur(2px); opacity: 0; transition: all 0.3s; }
@@ -46,33 +45,31 @@
                     <a href="#dubbed-section" class="hover:text-white transition">دۆبلاژ</a>
                 </div>
             </div>
-            <button class="w-10 h-10 rounded-full bg-gray-800/50 flex justify-center items-center hover:bg-gray-700 transition">
-                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </button>
+            <div class="flex items-center gap-2">
+                <input type="text" id="searchInput" placeholder="گەڕان بۆ فیلم..." 
+                       class="hidden md:block bg-gray-800 text-white text-sm rounded-full px-4 py-2 border border-gray-700 focus:outline-none focus:border-blue-500 transition-all w-40 md:w-64">
+                <button id="searchBtn" class="md:hidden w-10 h-10 rounded-full bg-gray-800/50 flex justify-center items-center hover:bg-gray-700 transition">
+                    <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </button>
+            </div>
         </div>
     </nav>
 
     <div class="relative w-full h-[65vh] md:h-[80vh] mt-16 border-b border-gray-800/50">
-        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://raw.githubusercontent.com/jiyrfu757/Ahh/refs/heads/main/x9BimIhzrX8PHvJtATXIW0D5MZr.jpg');"></div>
+        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://image.tmdb.org/t/p/original/2w4xG178RpB4MDAIfTkqAuSJzec.jpg');"></div>
         <div class="absolute inset-0 bg-gradient-to-t from-beenama via-beenama/60 to-transparent"></div>
         <div class="absolute inset-0 bg-gradient-to-l from-beenama/90 to-transparent"></div>
         
         <div class="absolute bottom-12 right-0 p-8 md:px-16 max-w-4xl z-10">
             <span class="bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-bold px-3 py-1 rounded-full mb-4 inline-block">تایبەت بە سێبەر تیڤی</span>
-            <h2 class="text-4xl md:text-6xl font-bold text-white mb-4">کازیوەی خومار</h2>
+            <h2 class="text-4xl md:text-6xl font-bold text-white mb-4">Star Wars</h2>
             <p class="text-gray-400 text-sm md:text-base mb-8 max-w-2xl leading-relaxed">
                 باشترین بەرهەمەکان بە کوالێتی بەرز و بێ کێشە لە سێبەر تیڤی ببینە. ئێستا دەتوانیت سەیری نوێترین ئەڵقەکانی ئەم زنجیرەیە بکەیت.
             </p>
-            <div class="flex gap-4">
-                <button class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded text-sm font-bold flex items-center gap-2 transition">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
-                    سەیرکردن
-                </button>
-            </div>
         </div>
     </div>
 
-    <div class="container mx-auto px-4 md:px-8 -mt-6 relative z-20 space-y-12 pb-24">
+    <div class="container mx-auto px-4 md:px-8 -mt-6 relative z-20 space-y-12 pb-24" id="main-content-container">
         
         <div id="movies-section" class="space-y-4">
             <h3 class="text-xl font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-2">
@@ -99,15 +96,23 @@
 
     <div id="player-modal" class="fixed inset-0 z-[100] flex flex-col items-center justify-center p-0 md:p-10">
         <button onclick="closePlayer()" class="absolute top-4 right-4 md:top-8 md:right-8 text-white text-xl bg-gray-800/80 hover:bg-red-500 rounded-full w-10 h-10 flex items-center justify-center transition z-50">✕</button>
-        <div class="w-full h-full md:h-auto md:max-w-5xl bg-cardbg md:rounded-xl overflow-hidden shadow-2xl flex flex-col">
-            <video id="main-video" playsinline controls crossorigin class="w-full bg-black"></video>
+        <div class="w-full h-full md:h-auto md:max-w-5xl bg-cardbg md:rounded-xl overflow-hidden shadow-2xl flex flex-col relative">
+            
+            <div id="video-container" class="w-full bg-black hidden">
+                <video id="main-video" playsinline controls crossorigin class="w-full"></video>
+            </div>
+
+            <div id="iframe-container" class="w-full bg-black hidden aspect-video">
+                <iframe id="main-iframe" class="w-full h-full border-0" allowfullscreen allow="autoplay"></iframe>
+            </div>
+
             <div class="p-6">
                 <h2 id="player-title" class="text-2xl font-bold text-white mb-2">ناوی فیلم</h2>
                 <div class="flex gap-2 text-xs text-gray-400 mb-4 font-sans">
-                    <span id="player-imdb" class="bg-gray-800 px-2 py-1 rounded">IMDb</span>
-                    <span id="player-type" class="bg-gray-800 px-2 py-1 rounded">جۆر</span>
+                    <span id="player-imdb" class="bg-gray-800 px-2 py-1 rounded text-yellow-500">IMDb</span>
+                    <span id="player-year" class="bg-gray-800 px-2 py-1 rounded">ساڵ</span>
                 </div>
-                <p id="player-desc" class="text-gray-400 text-sm leading-relaxed">وەسف...</p>
+                <p id="player-desc" class="text-gray-400 text-sm leading-relaxed line-clamp-3">وەسف...</p>
             </div>
         </div>
     </div>
@@ -129,8 +134,30 @@
             controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'fullscreen']
         });
 
-        // گەنجینەی داتاکان بۆ ڕێگریکردن لە قفڵبوونی سایتەکە
         window.allMoviesData = {};
+
+        // جێبەجێکردنی گەڕان
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+
+        searchBtn.addEventListener('click', () => {
+            searchInput.classList.toggle('hidden');
+            if(!searchInput.classList.contains('hidden')) searchInput.focus();
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const allCards = document.querySelectorAll('.movie-card');
+            
+            allCards.forEach(card => {
+                const title = card.getAttribute('data-title').toLowerCase();
+                if(title.includes(query)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
 
         onValue(ref(db, 'subtitled_movies'), (snapshot) => renderCards(snapshot.val(), 'subtitled-row', 'ژێرنووس'));
         onValue(ref(db, 'movies'), (snapshot) => renderCards(snapshot.val(), 'dubbed-row', 'دۆبلاژ'));
@@ -141,30 +168,30 @@
             if (!data) return;
 
             let htmlString = '';
-
             for (let key in data) {
                 const item = data[key];
-                
-                // خەزنکردنی داتاکە لە ڕام، تەنها ئایدییەکە دەنێرین بۆ دوگمەکە
                 window.allMoviesData[key] = item; 
                 
-                const imageUrl = item.image || item.poster || '';
+                // گۆڕینی وێنە بۆ شێوازی نوێی جۆسۆنەکەت (poster)
+                const imageUrl = item.poster || item.image || item.cover || '';
+                const title = item.title || 'بێ ناو';
                 
                 htmlString += `
-                    <div class="movie-card min-w-[130px] md:min-w-[160px] w-[130px] md:w-[160px] flex-shrink-0 cursor-pointer group" onclick="openPlayer('${key}')">
-                        <div class="relative rounded-lg overflow-hidden aspect-[2/3] bg-gray-800">
+                    <div class="movie-card min-w-[130px] md:min-w-[160px] w-[130px] md:w-[160px] flex-shrink-0 cursor-pointer group" 
+                         onclick="openPlayer('${key}')" data-title="${title}">
+                        <div class="relative rounded-lg overflow-hidden aspect-[2/3] bg-gray-800 shadow-md">
                             <img src="${imageUrl}" class="w-full h-full object-cover" loading="lazy">
                             <div class="absolute top-2 right-2 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
                                 <span class="text-yellow-400">★</span> ${item.imdb || typeLabel}
                             </div>
                             <div class="play-btn-overlay absolute inset-0 flex items-center justify-center">
-                                <div class="play-icon w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                                <div class="play-icon w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.5)]">
                                     <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
                                 </div>
                             </div>
                         </div>
-                        <h3 class="mt-2 text-sm font-semibold text-gray-200 truncate pr-1">${item.title}</h3>
-                        <p class="text-[11px] text-gray-500 pr-1 mt-0.5">${item.year || item.duration || ''}</p>
+                        <h3 class="mt-2 text-sm font-semibold text-gray-200 truncate pr-1" title="${title}">${title}</h3>
+                        <p class="text-[11px] text-gray-500 pr-1 mt-0.5">${item.year || ''}</p>
                     </div>
                 `;
             }
@@ -186,50 +213,61 @@
 
         window.openPlayer = async function(movieKey) {
             try {
-                // هێنانەوەی داتاکە لە گەنجینەکە زۆر بە خێرایی
                 const item = window.allMoviesData[movieKey];
                 if (!item) return;
 
-                document.getElementById('player-title').innerText = item.title;
+                document.getElementById('player-title').innerText = item.title || 'بێ ناو';
                 document.getElementById('player-desc').innerText = item.description || "هیچ زانیارییەک بەردەست نییە.";
-                document.getElementById('player-imdb').innerText = "IMDb: " + (item.imdb || "N/A");
-                document.getElementById('player-type').innerText = item.translation || "فیلم";
+                document.getElementById('player-imdb').innerText = "⭐ " + (item.imdb || "N/A");
+                document.getElementById('player-year').innerText = item.year || item.type || "فیلم";
                 
                 document.getElementById('player-modal').style.display = 'flex';
                 
-                player.source = { type: 'video', sources: [{ src: item.url, type: 'video/mp4' }] };
-                player.play();
+                const url = item.url;
+                const videoContainer = document.getElementById('video-container');
+                const iframeContainer = document.getElementById('iframe-container');
+                const iframe = document.getElementById('main-iframe');
 
-                let tracks = [];
+                // زیرەکی کۆدەکە: جیاکردنەوەی Embed لە MP4
+                if(url && (url.includes('embed') || url.includes('vidsrc') || url.includes('iframe'))) {
+                    // شاردنەوەی پلەیەری خۆمان و نیشاندانی Iframe
+                    videoContainer.style.display = 'none';
+                    iframeContainer.style.display = 'block';
+                    iframe.src = url;
+                    player.pause(); // وەستاندنی پلەیرە کۆنەکە ئەگەر ئیشی دەکرد
+                } else {
+                    // ئەگەر MP4 بوو، بە پلەیەری خۆمان لێی دەدەین
+                    iframeContainer.style.display = 'none';
+                    videoContainer.style.display = 'block';
+                    iframe.src = ''; 
+                    
+                    player.source = { type: 'video', sources: [{ src: url, type: 'video/mp4' }] };
+                    player.play();
 
-                if (item.subtitleKurdish) {
-                    const vttUrl = await srtToVtt(item.subtitleKurdish);
-                    if (vttUrl) tracks.push({ kind: 'captions', label: 'کوردی', srclang: 'ku', src: vttUrl, default: true });
-                }
+                    let tracks = [];
+                    // گەڕان بەدوای ژێرنووسی نوێ (subtitleEnglish یان subtitleKurdish)
+                    const subUrl = item.subtitleEnglish || item.subtitleKurdish;
+                    if (subUrl) {
+                        const vttUrl = await srtToVtt(subUrl);
+                        if (vttUrl) tracks.push({ kind: 'captions', label: 'ژێرنووس', srclang: 'ku', src: vttUrl, default: true });
+                    }
 
-                if (item.subtitles && Array.isArray(item.subtitles)) {
-                    // وەرگرتنی تەنها ٥ ژێرنووس بۆ ئەوەی خێرا بێت و قفڵ نەبێت
-                    const subsToLoad = item.subtitles.slice(0, 5); 
-                    for (let sub of subsToLoad) {
-                        const vttUrl = await srtToVtt(sub.url);
-                        if (vttUrl) tracks.push({ kind: 'captions', label: sub.display, srclang: sub.language, src: vttUrl });
+                    if (tracks.length > 0) {
+                        player.source = {
+                            type: 'video',
+                            sources: [{ src: url, type: 'video/mp4' }],
+                            tracks: tracks
+                        };
                     }
                 }
-
-                if (tracks.length > 0) {
-                    player.source = {
-                        type: 'video',
-                        sources: [{ src: item.url, type: 'video/mp4' }],
-                        tracks: tracks
-                    };
-                }
             } catch (error) {
-                console.error("کێشەیەک ڕوویدا لە کاتی کردنەوەی پلەیەر:", error);
+                console.error("Error opening player:", error);
             }
         };
 
         window.closePlayer = function() {
             player.pause();
+            document.getElementById('main-iframe').src = ''; // وەستاندنی ڤیدیۆی ناو Iframe
             document.getElementById('player-modal').style.display = 'none';
         };
     </script>
